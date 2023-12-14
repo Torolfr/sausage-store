@@ -85,6 +85,6 @@ upload-backend-release:
     - echo $NEXUS_REPO_PASS
     - echo $NEXUS_REPO_URL
     - >
-      mvn deploy -DskipTests
+      mvn deploy -DskipTests -e
       -Dmaven.repo.local=$MAVEN_REPO_PATH
       -s settings.xml -Dversion.application=$VERSION

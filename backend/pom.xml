@@ -121,7 +121,8 @@
         <repository>
            <id>sausage-store</id>
            <name>sausage-store</name>
-           <url>$NEXUS_REPO_URL/$NEXUS_REPO_BACKEND_NAME/</url>
+           <!-- <url>$NEXUS_REPO_URL/$NEXUS_REPO_BACKEND_NAME/</url> -->
+           <url>https://nexus.praktikum-services.tech/repository/sausage-store-std-024-29-backend/</url>
         </repository>
     </distributionManagement>
 
