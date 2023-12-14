@@ -81,8 +81,8 @@ upload-backend-release:
   script:
     - cd backend
     - printenv
-    - echo $env.NEXUS_REPO_USER
-    - echo $env.NEXUS_REPO_PASS
+    - echo $NEXUS_REPO_USER
+    - echo $NEXUS_REPO_PASS
     - echo $NEXUS_REPO_URL
     - >
       mvn deploy -DskipTests
