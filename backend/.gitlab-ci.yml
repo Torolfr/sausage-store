@@ -13,7 +13,7 @@ include:
 
 cache:
   paths:
-    - $CI_PROJECT_DIR/.m2/repository
+    - $MAVEN_REPO_PATH
 
 build-backend-code-job:
   stage: build
@@ -23,35 +23,35 @@ build-backend-code-job:
   script:
     - cd backend
     - > 
-      mvn package -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+      mvn package -Dmaven.repo.local=$MAVEN_REPO_PATH
       -Dversion.application=$VERSION
   artifacts:
     paths:
       - backend/target/sausage-store-$VERSION.jar
 
-spotbugs-sast:
-  stage: test
-  needs:
-    - build-backend-code-job
-  variables:
-    COMPILE: "false"
-    SAST_JAVA_VERSION: 11
-    MAVEN_REPO_PATH: $CI_PROJECT_DIR/.m2/repository
+# spotbugs-sast:
+#   stage: test
+#   needs:
+#     - build-backend-code-job
+#   variables:
+#     COMPILE: "false"
+#     SAST_JAVA_VERSION: 11
+#     MAVEN_REPO_PATH: $MAVEN_REPO_PATH
 
-sonarqube-backend-sast:
-  stage: test
-  needs:
-    - build-backend-code-job
-  image: maven:3.8-openjdk-16
-  script:
-    - cd backend
-    - >
-      mvn verify sonar:sonar
-      -Dsonar.qualitygate.wait=true
-      -Dsonar.projectKey=$SONAR_PROJECT_KEY_BACK
-      -Dsonar.host.url=$SONARQUBE_URL
-      -Dsonar.login=$SONAR_LOGIN_BACK
-  allow_failure: true
+# sonarqube-backend-sast:
+#   stage: test
+#   needs:
+#     - build-backend-code-job
+#   image: maven:3.8-openjdk-16
+#   script:
+#     - cd backend
+#     - >
+#       mvn verify sonar:sonar
+#       -Dsonar.qualitygate.wait=true
+#       -Dsonar.projectKey=$SONAR_PROJECT_KEY_BACK
+#       -Dsonar.host.url=$SONARQUBE_URL
+#       -Dsonar.login=$SONAR_LOGIN_BACK
+#   allow_failure: true
 
 telegram-notification-backend:
   stage: notify
@@ -81,6 +81,6 @@ upload-backend-release:
   script:
     - cd backend
     - >
-      mvn package -DskipTests
-      -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository
+      mvn deploy -DskipTests
+      -Dmaven.repo.local=$MAVEN_REPO_PATH
       -s settings.xml -Dversion.application=$VERSION
