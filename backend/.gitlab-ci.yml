@@ -80,10 +80,7 @@ upload-backend-release:
     - build-backend-code-job
   script:
     - cd backend
-    - printenv
-    - echo $NEXUS_REPO_USER
-    - echo $NEXUS_REPO_PASS
-    - echo $NEXUS_REPO_URL
+    - echo $NEXUS_REPO_URL/$NEXUS_REPO_BACKEND_NAME/
     - >
       mvn deploy -DskipTests -e
       -Dmaven.repo.local=$MAVEN_REPO_PATH
