@@ -121,7 +121,7 @@
         <repository>
            <id>sausage-store</id>
            <name>sausage-store</name>
-           <url>${NEXUS_REPO_URL}/${NEXUS_REPO_BACKEND_NAME}/</url>
+           <url>$NEXUS_REPO_URL/$NEXUS_REPO_BACKEND_NAME/</url>
         </repository>
     </distributionManagement>
 
