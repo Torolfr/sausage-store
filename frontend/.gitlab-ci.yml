@@ -9,7 +9,7 @@ stages:
 
 cache:
   paths:
-    - .nmp/
+    - frontend/dist/frontend
 
 build-frontend-code-job:
   stage: build
@@ -20,9 +20,7 @@ build-frontend-code-job:
     - cd frontend
     - npm install
     - npm run build
-  artifacts:
-    paths:
-      - frontend/dist/frontend
+
 
 # sonarqube-frontend-sast:
 #   stage: test
