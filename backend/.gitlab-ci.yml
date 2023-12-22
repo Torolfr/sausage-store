@@ -65,7 +65,6 @@ telegram-notification-backend:
     variables:
       - "$CI_COMMIT_MESSAGE =~ /send notification/"
   script:
-    - echo $MESSAGE
     - >
       curl -X POST -H "Content-type: application/json"
       --data "{\"chat_id\": \"$TELEGRAM_TO\", \"text\": \"$MESSAGE\"}"
@@ -80,7 +79,6 @@ upload-backend-release:
     - build-backend-code-job
   script:
     - cd backend
-    - echo $NEXUS_REPO_URL/$NEXUS_REPO_BACKEND_NAME/
     - >
       mvn deploy -DskipTests
       -Dmaven.repo.local=$MAVEN_REPO_PATH
