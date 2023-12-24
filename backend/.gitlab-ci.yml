@@ -87,7 +87,7 @@ upload-backend-release:
 backend-deploy:
   stage: deploy
   environment:
-    name: ackend/$CI_COMMIT_REF_SLUG
+    name: backend/$CI_COMMIT_REF_SLUG
     on_stop: delete-backend-deploy
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
