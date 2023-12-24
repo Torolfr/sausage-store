@@ -6,4 +6,4 @@ curl -u $NEXUS_REPO_USER:$NEXUS_REPO_PASS -o sausage-store.tar.gz $CURL_URL
 sudo cp ./sausage-store.tar.gz /home/frontend/sausage-store/static/dist||true
 sudo tar xzvf sausage-store.tar.gz
 sudo systemctl daemon-reload
-sudo systemctl restart backend.service
+sudo systemctl restart frontend.service
