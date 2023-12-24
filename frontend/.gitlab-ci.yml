@@ -66,7 +66,7 @@ upload-frontend-release:
   needs:
     - build-frontend-code-job
   script:
-    - tar czvf sausage-store-${VERSION}.tar.gz frontend
+    - tar czvf sausage-store-$VERSION.tar.gz frontend
     - >
       curl -v -u "$NEXUS_REPO_USER:$NEXUS_REPO_PASS"
       --upload-file sausage-store-$VERSION.tar.gz
@@ -89,6 +89,6 @@ deploy:
       ssh $DEV_USER@$DEV_HOST
       "export "CURRENT_VERSION=$VERSION"; export "VERSION=$VERSION";
       export "DEV_HOST=$DEV_HOST";export "NEXUS_REPO_URL=$NEXUS_REPO_URL";
-      export "NEXUS_REPO_BACKEND_NAME=$NEXUS_REPO_BACKEND_NAME";
+      export "NEXUS_REPO_FRONTEND_NAME=$NEXUS_REPO_FRONTEND_NAME";
       export "NEXUS_REPO_USER=$NEXUS_REPO_USER"; export "NEXUS_REPO_PASS=$NEXUS_REPO_PASS";
       setsid /bin/bash -s " < ./frontend/deploy.sh
