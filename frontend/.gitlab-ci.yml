@@ -27,23 +27,23 @@ build-frontend-code-job:
 
 
 
-# sonarqube-frontend-sast:
-#   stage: test
-#   needs:
-#     - build-frontend-code-job
-#   image:
-#     name: sonarsource/sonar-scanner-cli:latest
-#     entrypoint: [""]
-#   script:
-#     - cd frontend
-#     - >
-#       sonar-scanner
-#       -Dsonar.qualitygate.wait=true
-#       -Dsonar.projectKey=$SONAR_PROJECT_KEY_FRONT
-#       -Dsonar.sources=.
-#       -Dsonar.host.url=$SONARQUBE_URL
-#       -Dsonar.login=$SONAR_LOGIN_FRONT
-#   allow_failure: true
+sonarqube-frontend-sast:
+  stage: test
+  needs:
+    - build-frontend-code-job
+  image:
+    name: sonarsource/sonar-scanner-cli:latest
+    entrypoint: [""]
+  script:
+    - cd frontend
+    - >
+      sonar-scanner
+      -Dsonar.qualitygate.wait=true
+      -Dsonar.projectKey=$SONAR_PROJECT_KEY_FRONT
+      -Dsonar.sources=.
+      -Dsonar.host.url=$SONARQUBE_URL
+      -Dsonar.login=$SONAR_LOGIN_FRONT
+  allow_failure: true
 
 telegram-notification-frontend:
   stage: notify
