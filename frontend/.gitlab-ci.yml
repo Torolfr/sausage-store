@@ -84,7 +84,7 @@ deploy:
     - chmod 644 ~/.ssh/known_hosts
 
   script:
-     - scp ./frontend/frontend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/backend.service
+     - scp ./frontend/frontend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/frontend.service
      - >
       ssh $DEV_USER@$DEV_HOST
       "export "CURRENT_VERSION=$VERSION"; export "VERSION=$VERSION";
