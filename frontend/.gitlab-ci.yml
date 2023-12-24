@@ -79,6 +79,9 @@ upload-frontend-release:
 
 deploy:
   stage: deploy
+  environment:
+    name: $CI_COMMIT_REF_SLUG
+    on_stop: Delete deploy
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
