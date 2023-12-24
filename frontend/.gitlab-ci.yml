@@ -77,11 +77,11 @@ upload-frontend-release:
       --upload-file sausage-store-$VERSION.tar.gz
       $NEXUS_REPO_URL/$NEXUS_REPO_FRONTEND_NAME/$VERSION/sausage-store-$VERSION.tar.gz
 
-deploy:
+frontend-deploy:
   stage: deploy
   environment:
-    name: $CI_COMMIT_REF_SLUG
-    on_stop: Delete deploy
+    name: frontend/$CI_COMMIT_REF_SLUG
+    on_stop: delete-frontend-deploy
   before_script:
     - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
     - eval $(ssh-agent -s)
@@ -100,3 +100,20 @@ deploy:
       export "NEXUS_REPO_FRONTEND_NAME=$NEXUS_REPO_FRONTEND_NAME";
       export "NEXUS_REPO_USER=$NEXUS_REPO_USER"; export "NEXUS_REPO_PASS=$NEXUS_REPO_PASS";
       setsid /bin/bash -s " < ./frontend/deploy.sh
+
+delete-frontend-deploy:
+  stage: deploy
+  when: manual
+  environment:
+    name: frontend/$CI_COMMIT_REF_SLUG
+    action: stop
+  before_script:
+    - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 600 ~/.ssh
+    - ssh-keyscan $DEV_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh $DEV_USER@$DEV_HOST "setsid /bin/bash -s " < ./frontend/stop.sh
