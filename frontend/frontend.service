@@ -5,9 +5,8 @@ After=network.target
 [Service]
 User=frontend
 Group=frontend
-ExecStart=http-server /opt/sausage-store/static/dist/frontend/ -p 80 --proxy http://localhost:8080
+ExecStart=http-server /home/frontend/sausage-store/static/dist/frontend/ -p 80 --proxy http://localhost:8080
 Restart=always
-# Hello test
 
 [Install]
 WantedBy=multi-user.target
