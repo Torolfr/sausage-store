@@ -1,0 +1,12 @@
+[Unit]
+Description=Frontend Service
+After=network.target
+
+[Service]
+User=frontend
+Group=frontend
+ExecStart=http-server /home/frontend/sausage-store/static/dist/frontend/ -p 80 --proxy http://localhost:8080
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
