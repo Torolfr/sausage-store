@@ -8,6 +8,8 @@ Group=backend
 Environment='REPORT_PATH=/var/sausage-store/reports'
 Environment='LOG_PATH=/var/sausage-store/logs'
 Restart=always
+# Get DB environmental variables
+EnvironmentFile=/home/backend/.env
 ExecStart=/usr/bin/java \
 -Dmyserver.basePath='/opt/sausage-store/bin/' \
 -Dmyserver.bindAddr='127.0.0.1' \
