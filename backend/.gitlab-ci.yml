@@ -27,6 +27,7 @@ build-backend-code-job:
     - >
       mvn package -Dmaven.repo.local=${MAVEN_REPO_PATH}
       -Dversion.application=${VERSION}
+      -Dspring.flyway.enabled=false
 
 spotbugs-sast:
   stage: test
@@ -50,6 +51,7 @@ sonarqube-backend-sast:
       -Dsonar.projectKey=${SONAR_PROJECT_KEY_BACK}
       -Dsonar.host.url=${SONARQUBE_URL}
       -Dsonar.login=${SONAR_LOGIN_BACK}
+      -Dspring.flyway.enabled=false
   allow_failure: true
 
 telegram-notification-backend:
