@@ -131,7 +131,6 @@ build:
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
     entrypoint: [""]
-  # переменные CI_REGISTRY_USER, CI_REGISTRY_PASSWORD, CI_REGISTRY генерятся Гитлабом, их задавать не надо
   script:
     - echo "test"
     - /kaniko/executor
@@ -168,9 +167,10 @@ deploy-backend:
     - chmod 700 ~/.ssh
     - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+  script:
     - envsubst < ./backend/backend_deploy.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
-delete-backend-deploy:
+delete-deploy-backend:
   stage: deploy
   image: alpine:3.18
   when: manual
@@ -185,4 +185,5 @@ delete-backend-deploy:
     - chmod 700 ~/.ssh
     - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+  script:
     - envsubst < ./backend/backend_stop.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
