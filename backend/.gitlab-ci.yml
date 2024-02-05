@@ -85,43 +85,104 @@ upload-backend-release:
       -Dmaven.repo.local=${MAVEN_REPO_PATH}
       -s settings.xml -Dversion.application=${VERSION}
 
-backend-deploy:
+# backend-deploy:
+#   stage: deploy
+#   environment:
+#     name: backend/${CI_COMMIT_REF_SLUG}
+#     on_stop: delete-backend-deploy
+#   before_script:
+#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+#     - eval $(ssh-agent -s)
+#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+#     - mkdir -p ~/.ssh
+#     - chmod 600 ~/.ssh
+#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+#     - chmod 644 ~/.ssh/known_hosts
+
+#   script:
+#     - scp ./backend/backend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/backend.service
+#     - >
+#       ssh ${DEV_USER}@${DEV_HOST}
+#       "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
+#       export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
+#       export "NEXUS_REPO_BACKEND_NAME=${NEXUS_REPO_BACKEND_NAME}";
+#       export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
+#       setsid /bin/bash -s " < ./backend/deploy.sh
+
+# delete-backend-deploy:
+#   stage: deploy
+#   when: manual
+#   environment:
+#     name: backend/${CI_COMMIT_REF_SLUG}
+#     action: stop
+#   before_script:
+#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+#     - eval $(ssh-agent -s)
+#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+#     - mkdir -p ~/.ssh
+#     - chmod 600 ~/.ssh
+#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+#     - chmod 644 ~/.ssh/known_hosts
+#   script:
+#     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./backend/stop.sh
+
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  # переменные CI_REGISTRY_USER, CI_REGISTRY_PASSWORD, CI_REGISTRY генерятся Гитлабом, их задавать не надо
+  script:
+    - echo "test"
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/backend"
+      --dockerfile "${CI_PROJECT_DIR}/backend/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/sausage-backend:$CI_COMMIT_SHA"
+      --build-arg VERSION=$VERSION
+      --cache=true
+
+release:
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  cache: []
+  stage: release
+  before_script:
+    - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - crane tag $CI_REGISTRY_IMAGE/sausage-backend:$CI_COMMIT_SHA latest
+
+deploy-backend:
   stage: deploy
+  image: alpine:3.18
   environment:
     name: backend/${CI_COMMIT_REF_SLUG}
-    on_stop: delete-backend-deploy
+    on_stop: delete-deploy-backend
   before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+    - apk add openssh-client bash
     - eval $(ssh-agent -s)
-    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 600 ~/.ssh
-    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-
-  script:
-    - scp ./backend/backend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/backend.service
-    - >
-      ssh ${DEV_USER}@${DEV_HOST}
-      "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
-      export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
-      export "NEXUS_REPO_BACKEND_NAME=${NEXUS_REPO_BACKEND_NAME}";
-      export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
-      setsid /bin/bash -s " < ./backend/deploy.sh
+    - envsubst < ./backend/backend_deploy.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
 delete-backend-deploy:
   stage: deploy
+  image: alpine:3.18
   when: manual
   environment:
     name: backend/${CI_COMMIT_REF_SLUG}
     action: stop
   before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+    - apk add openssh-client bash
     - eval $(ssh-agent -s)
-    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 600 ~/.ssh
-    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-  script:
-    - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./backend/stop.sh
+    - envsubst < ./backend/backend_stop.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}

@@ -11,6 +11,7 @@ stages:
 cache:
   paths:
     - frontend/dist/frontend
+    - .npm/
 
 build-frontend-code-job:
   stage: build
@@ -75,43 +76,106 @@ upload-frontend-release:
       --upload-file sausage-store-${VERSION}.tar.gz
       ${NEXUS_REPO_URL}/${NEXUS_REPO_FRONTEND_NAME}/${VERSION}/sausage-store-${VERSION}.tar.gz
 
-frontend-deploy:
+# frontend-deploy:
+#   stage: deploy
+#   environment:
+#     name: frontend/${CI_COMMIT_REF_SLUG}
+#     on_stop: delete-frontend-deploy
+#   before_script:
+#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+#     - eval $(ssh-agent -s)
+#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+#     - mkdir -p ~/.ssh
+#     - chmod 600 ~/.ssh
+#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+#     - chmod 644 ~/.ssh/known_hosts
+
+#   script:
+#     - scp ./frontend/frontend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/frontend.service
+#     - >
+#       ssh ${DEV_USER}@${DEV_HOST}
+#       "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
+#       export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
+#       export "NEXUS_REPO_FRONTEND_NAME=${NEXUS_REPO_FRONTEND_NAME}";
+#       export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
+#       setsid /bin/bash -s " < ./frontend/deploy.sh
+
+# delete-frontend-deploy:
+#   stage: deploy
+#   when: manual
+#   environment:
+#     name: frontend/${CI_COMMIT_REF_SLUG}
+#     action: stop
+#   before_script:
+#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+#     - eval $(ssh-agent -s)
+#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
+#     - mkdir -p ~/.ssh
+#     - chmod 600 ~/.ssh
+#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+#     - chmod 644 ~/.ssh/known_hosts
+#   script:
+#     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./frontend/stop.sh
+
+build:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.9.0-debug
+    entrypoint: [""]
+  script:
+    - /kaniko/executor
+      --context "${CI_PROJECT_DIR}/frontend"
+      --dockerfile "${CI_PROJECT_DIR}/frontend/Dockerfile"
+      --destination "${CI_REGISTRY_IMAGE}/sausage-frontend:$CI_COMMIT_SHA"
+      --build-arg VERSION=$VERSION
+      --cache=true
+
+release:
+  variables:
+    GIT_STRATEGY: none
+  image:
+    name: gcr.io/go-containerregistry/crane:debug
+    entrypoint: [""]
+  cache: []
+  stage: release
+  script:
+    - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - crane tag $CI_REGISTRY_IMAGE/sausage-frontend:$CI_COMMIT_SHA latest
+
+deploy-frontend:
   stage: deploy
+  image: alpine:3.18
   environment:
     name: frontend/${CI_COMMIT_REF_SLUG}
-    on_stop: delete-frontend-deploy
-  before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+    on_stop: delete-deploy-frontend
+  script:
+    - apt-get update -y && apt-get install gettext openssh-client -y || true
+    - command -v ssh-agent >/dev/null
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 600 ~/.ssh
-    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+    - ssh ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
+    - scp ./frontend/default.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
+    - envsubst < ./frontend/frontend_deploy.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
-  script:
-    - scp ./frontend/frontend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/frontend.service
-    - >
-      ssh ${DEV_USER}@${DEV_HOST}
-      "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
-      export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
-      export "NEXUS_REPO_FRONTEND_NAME=${NEXUS_REPO_FRONTEND_NAME}";
-      export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
-      setsid /bin/bash -s " < ./frontend/deploy.sh
-
-delete-frontend-deploy:
+delete-deploy-frontend:
   stage: deploy
   when: manual
   environment:
     name: frontend/${CI_COMMIT_REF_SLUG}
     action: stop
-  before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+  script:
+    - apt-get update -y && apt-get install gettext openssh-client -y || true
+    - command -v ssh-agent >/dev/null
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 600 ~/.ssh
-    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
+    - chmod 700 ~/.ssh
+    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-  script:
-    - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./frontend/stop.sh
+    - ssh ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
+    - scp ./frontend/default.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
+    - envsubst < ./frontend/frontend_stop.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
