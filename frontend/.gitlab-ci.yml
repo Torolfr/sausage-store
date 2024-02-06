@@ -148,8 +148,7 @@ deploy-frontend-docker:
     name: frontend/${CI_COMMIT_REF_SLUG}
     on_stop: delete-deploy-frontend-docker
   before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-    - apk add gettext
+    - "which ssh-agent || ( apt-get update -y && apt-get install gettext openssh-client -y )"
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
