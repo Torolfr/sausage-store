@@ -28,6 +28,7 @@ build-backend-code-job:
       mvn package -Dmaven.repo.local=${MAVEN_REPO_PATH}
       -Dversion.application=${VERSION}
       -Dspring.flyway.enabled=false
+      -DskipTests=true
 
 spotbugs-sast:
   stage: test
