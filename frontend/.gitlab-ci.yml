@@ -117,7 +117,7 @@ upload-frontend-release:
 #   script:
 #     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./frontend/stop.sh
 
-build:
+build-frontend-docker-job:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
@@ -130,7 +130,7 @@ build:
       --build-arg VERSION=$VERSION
       --cache=true
 
-release:
+release-frontend-docker:
   variables:
     GIT_STRATEGY: none
   image:
@@ -142,40 +142,37 @@ release:
     - crane auth login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
     - crane tag $CI_REGISTRY_IMAGE/sausage-frontend:$CI_COMMIT_SHA latest
 
-deploy-frontend:
+deploy-frontend-docker:
   stage: deploy
-  image: alpine:3.18
   environment:
     name: frontend/${CI_COMMIT_REF_SLUG}
-    on_stop: delete-deploy-frontend
-  script:
-    - apt-get update -y && apt-get install gettext openssh-client -y || true
-    - command -v ssh-agent >/dev/null
+    on_stop: delete-deploy-frontend-docker
+  before_script:
+    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh
+    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+  script:
     - ssh ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
     - scp ./frontend/default.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
-    - envsubst < ./frontend/frontend_deploy.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
-delete-deploy-frontend:
+delete-deploy-frontend-docker:
   stage: deploy
   when: manual
   environment:
     name: frontend/${CI_COMMIT_REF_SLUG}
     action: stop
-  script:
-    - apt-get update -y && apt-get install gettext openssh-client -y || true
-    - command -v ssh-agent >/dev/null
+  before_script:
+    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh
+    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-    - ssh ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
-    - scp ./frontend/default.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
-    - envsubst < ./frontend/frontend_stop.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+  script:
+    - envsubst < ./frontend/frontend_stop_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}

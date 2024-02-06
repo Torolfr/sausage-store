@@ -126,7 +126,7 @@ upload-backend-release:
 #   script:
 #     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./backend/stop.sh
 
-build:
+build-backend-docker-job:
   stage: build
   image:
     name: gcr.io/kaniko-project/executor:v1.9.0-debug
@@ -140,7 +140,7 @@ build:
       --build-arg VERSION=$VERSION
       --cache=true
 
-release:
+release-backend-docker:
   variables:
     GIT_STRATEGY: none
   image:
@@ -153,37 +153,35 @@ release:
   script:
     - crane tag $CI_REGISTRY_IMAGE/sausage-backend:$CI_COMMIT_SHA latest
 
-deploy-backend:
+deploy-backend-docker:
   stage: deploy
-  image: alpine:3.18
   environment:
     name: backend/${CI_COMMIT_REF_SLUG}
-    on_stop: delete-deploy-backend
+    on_stop: delete-deploy-backend-docker
   before_script:
-    - apk add openssh-client bash
+    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
     - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh
+    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - envsubst < ./backend/backend_deploy.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - envsubst < ./backend/backend_deploy_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
 
-delete-deploy-backend:
+delete-deploy-backend-docker:
   stage: deploy
-  image: alpine:3.18
   when: manual
   environment:
     name: backend/${CI_COMMIT_REF_SLUG}
     action: stop
   before_script:
-    - apk add openssh-client bash
+    - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
     - eval $(ssh-agent -s)
-    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
+    - chmod 600 ~/.ssh
+    - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - envsubst < ./backend/backend_stop.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - envsubst < ./backend/backend_stop_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
