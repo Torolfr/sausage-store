@@ -53,6 +53,7 @@ sonarqube-backend-sast:
       -Dsonar.host.url=${SONARQUBE_URL}
       -Dsonar.login=${SONAR_LOGIN_BACK}
       -Dspring.flyway.enabled=false
+      -DskipTests=true
   allow_failure: true
 
 telegram-notification-backend:
@@ -168,7 +169,7 @@ deploy-backend-docker:
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - envsubst < ./backend/backend_deploy_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - envsubst < ./backend/backend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
 
 delete-deploy-backend-docker:
   stage: deploy
@@ -185,4 +186,4 @@ delete-deploy-backend-docker:
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - envsubst < ./backend/backend_stop_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./backend/backend_stop_docker.sh

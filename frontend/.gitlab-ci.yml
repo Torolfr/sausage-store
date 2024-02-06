@@ -158,7 +158,7 @@ deploy-frontend-docker:
   script:
     - ssh ${DEPLOY_USER}@${DEPLOY_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
     - scp ./frontend/default.conf ${DEPLOY_USER}@${DEPLOY_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
-    - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
 
 delete-deploy-frontend-docker:
   stage: deploy
@@ -175,4 +175,4 @@ delete-deploy-frontend-docker:
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - envsubst < ./frontend/frontend_stop_docker.sh|ssh ${DEPLOY_USER}@${DEPLOY_HOST}
+    - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./frontend/frontend_stop_docker.sh
