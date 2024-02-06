@@ -162,6 +162,7 @@ deploy-backend-docker:
     on_stop: delete-deploy-backend-docker
   before_script:
     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
+    - apk add gettext
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
