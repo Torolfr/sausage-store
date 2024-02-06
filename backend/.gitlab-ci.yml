@@ -56,22 +56,22 @@ cache:
 #       -DskipTests=true
 #   allow_failure: true
 
-telegram-notification-backend:
-  stage: notify
-  needs:
-    - build-backend-code-job
-  variables:
-    MESSAGE: "Sergey Danilov built apps apps backend. ${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_BRANCH}/download?job=build-backend-code-job"
-  only:
-    changes:
-      - backend/*/**
-    variables:
-      - "$CI_COMMIT_MESSAGE =~ /send notification/"
-  script:
-    - >
-      curl -X POST -H "Content-type: application/json"
-      --data "{\"chat_id\": \"${TELEGRAM_TO}\", \"text\": \"${MESSAGE}\"}"
-      https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage
+# telegram-notification-backend:
+#   stage: notify
+#   needs:
+#     - build-backend-code-job
+#   variables:
+#     MESSAGE: "Sergey Danilov built apps apps backend. ${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_BRANCH}/download?job=build-backend-code-job"
+#   only:
+#     changes:
+#       - backend/*/**
+#     variables:
+#       - "$CI_COMMIT_MESSAGE =~ /send notification/"
+#   script:
+#     - >
+#       curl -X POST -H "Content-type: application/json"
+#       --data "{\"chat_id\": \"${TELEGRAM_TO}\", \"text\": \"${MESSAGE}\"}"
+#       https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage
 
 # upload-backend-release:
 #   stage: release
