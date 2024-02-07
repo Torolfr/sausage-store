@@ -16,7 +16,7 @@ RUN keytool -importcert -file YandexInternalRootCA.crt \
     && rm -rf YandexInternalRootCA.crt \
     && addgroup --system jaruser \
     && adduser -S -s /bin/false -G jaruser jaruser -D -H \
-    && sudo mkdir -p  /home/jaruser/.postgresql \
+    && mkdir -p /home/jaruser/.postgresql \
     && chown -R jaruser:jaruser /home/jaruser/
 COPY --chown=jaruser:jaruser \
      --from=builder /usr/src/app/target/sausage-store-${VERSION}.jar ./sausage-store.jar
