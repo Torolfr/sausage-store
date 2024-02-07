@@ -1,6 +1,8 @@
 #! /bin/bash
 set -xe
 sudo docker login -u ${CI_REGISTRY_USER} -p${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+echo ${CI_REGISTRY_IMAGE}
+echo ${CI_REGISTRY}
 sudo docker network create -d bridge sausage_network || true
 sudo docker rm -f sausage-backend || true
 sudo docker rmi gitlab.praktikum-services.ru:5050/std-024-29/sausage-store/sausage-backend || true
