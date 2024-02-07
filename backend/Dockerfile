@@ -22,6 +22,7 @@ COPY --chown=jaruser:jaruser \
      --from=builder /usr/src/app/target/sausage-store-${VERSION}.jar ./sausage-store.jar
 COPY --chown=jaruser:jaruser \
      --from=builder /usr/src/app/YandexInternalRootCA.crt /home/jaruser/.postgresql/root.crt
+RUN chmod 400 /home/jaruser/.postgresql/root.crt
 EXPOSE 8080
 USER jaruser
 ENTRYPOINT ["java", "-jar", "-Dmyserver.bindPort=8080", "/app/sausage-store.jar"]
