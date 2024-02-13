@@ -156,7 +156,7 @@ deploy-frontend-docker:
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
   script:
-    - ssh ${DEV_USER}@${DEV_HOST} "mkdir -p /opt/${CI_PROJECT_DIR}/frontend/"
+    - ssh ${DEV_USER}@${DEV_HOST} "mkdir -p /opt/sausage-store/${CI_PROJECT_DIR}/frontend/"
     - scp ./frontend/default.conf ${DEV_USER}@${DEV_HOST}:/opt/sausage-store/${CI_PROJECT_DIR}/frontend/default.conf
     - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
 
