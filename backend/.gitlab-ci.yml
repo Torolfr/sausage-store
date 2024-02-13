@@ -10,8 +10,8 @@ stages:
   - release
   - deploy
 
-# include:
-#   - template: Security/SAST.gitlab-ci.yml
+include:
+  - template: Security/SAST.gitlab-ci.yml
 
 cache:
   paths:
