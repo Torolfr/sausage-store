@@ -1,3 +1,4 @@
+#! /bin/bash
 set -xe
 sudo systemctl stop frontend.service
 sudo rm -rf /etc/systemd/system/fontend.service
