@@ -157,7 +157,7 @@ deploy-frontend-docker:
     - chmod 644 ~/.ssh/known_hosts
   script:
     - ssh ${DEV_USER}@${DEV_HOST} "mkdir -p /tmp/${CI_PROJECT_DIR}/frontend/"
-    - scp ./frontend/default.conf ${DEV_USER}@${DEV_HOST}:/tmp/${CI_PROJECT_DIR}/frontend/default.conf
+    - scp ./frontend/default.conf ${DEV_USER}@${DEV_HOST}:/opt/${CI_PROJECT_DIR}/frontend/default.conf
     - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
 
 delete-deploy-frontend-docker:
