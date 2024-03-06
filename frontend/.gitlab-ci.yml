@@ -76,47 +76,6 @@ upload-frontend-release:
       --upload-file sausage-store-${VERSION}.tar.gz
       ${NEXUS_REPO_URL}/${NEXUS_REPO_FRONTEND_NAME}/${VERSION}/sausage-store-${VERSION}.tar.gz
 
-# frontend-deploy:
-#   stage: deploy
-#   environment:
-#     name: frontend/${CI_COMMIT_REF_SLUG}
-#     on_stop: delete-frontend-deploy
-#   before_script:
-#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-#     - eval $(ssh-agent -s)
-#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
-#     - mkdir -p ~/.ssh
-#     - chmod 600 ~/.ssh
-#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
-#     - chmod 644 ~/.ssh/known_hosts
-
-#   script:
-#     - scp ./frontend/frontend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/frontend.service
-#     - >
-#       ssh ${DEV_USER}@${DEV_HOST}
-#       "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
-#       export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
-#       export "NEXUS_REPO_FRONTEND_NAME=${NEXUS_REPO_FRONTEND_NAME}";
-#       export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
-#       setsid /bin/bash -s " < ./frontend/deploy.sh
-
-# delete-frontend-deploy:
-#   stage: deploy
-#   when: manual
-#   environment:
-#     name: frontend/${CI_COMMIT_REF_SLUG}
-#     action: stop
-#   before_script:
-#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-#     - eval $(ssh-agent -s)
-#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
-#     - mkdir -p ~/.ssh
-#     - chmod 600 ~/.ssh
-#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
-#     - chmod 644 ~/.ssh/known_hosts
-#   script:
-#     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./frontend/stop.sh
-
 build-frontend-docker-job:
   stage: build
   image:
@@ -144,21 +103,25 @@ release-frontend-docker:
 
 deploy-frontend-docker:
   stage: deploy
+  image: docker:24.0.7-alpine3.19
   environment:
     name: frontend/${CI_COMMIT_REF_SLUG}
     on_stop: delete-deploy-frontend-docker
   before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install gettext openssh-client -y )"
+    - apk add docker-cli-compose openssh-client bash
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 600 ~/.ssh
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+    - docker context create remote --description "remote ssh" --docker "host=ssh://${DEV_USER}@${DEV_HOST}"
   script:
-    - ssh ${DEV_USER}@${DEV_HOST} "mkdir -p /opt/sausage-store/${CI_PROJECT_DIR}/frontend/"
-    - scp ./frontend/default.conf ${DEV_USER}@${DEV_HOST}:/opt/sausage-store/${CI_PROJECT_DIR}/frontend/default.conf
-    - envsubst < ./frontend/frontend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
+    - echo "VERSION=latest" >> deploy.env
+    - echo "REPORTS_MONGODB_URI="mongodb://${MONGO_USER}:${MONGO_PASSWORD}@${MONGO_HOST}:27018/${MONGO_DATABASE}?tls=true"" >> deploy.env
+    - echo "REPORT_PATH=/var/www-data/htdocs" >> deploy.env
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - docker --context remote compose --env-file deploy.env up frontend -d --pull "always" --force-recreate
 
 delete-deploy-frontend-docker:
   stage: deploy
