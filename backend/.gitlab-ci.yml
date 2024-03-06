@@ -87,47 +87,6 @@ upload-backend-release:
       -Dmaven.repo.local=${MAVEN_REPO_PATH}
       -s settings.xml -Dversion.application=${VERSION}
 
-# backend-deploy:
-#   stage: deploy
-#   environment:
-#     name: backend/${CI_COMMIT_REF_SLUG}
-#     on_stop: delete-backend-deploy
-#   before_script:
-#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-#     - eval $(ssh-agent -s)
-#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
-#     - mkdir -p ~/.ssh
-#     - chmod 600 ~/.ssh
-#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
-#     - chmod 644 ~/.ssh/known_hosts
-
-#   script:
-#     - scp ./backend/backend.service ${DEV_USER}@${DEV_HOST}:/home/${DEV_USER}/backend.service
-#     - >
-#       ssh ${DEV_USER}@${DEV_HOST}
-#       "export "CURRENT_VERSION=${VERSION}"; export "VERSION=${VERSION}";
-#       export "DEV_HOST=${DEV_HOST}";export "NEXUS_REPO_URL=${NEXUS_REPO_URL}";
-#       export "NEXUS_REPO_BACKEND_NAME=${NEXUS_REPO_BACKEND_NAME}";
-#       export "NEXUS_REPO_USER=${NEXUS_REPO_USER}"; export "NEXUS_REPO_PASS=${NEXUS_REPO_PASS}";
-#       setsid /bin/bash -s " < ./backend/deploy.sh
-
-# delete-backend-deploy:
-#   stage: deploy
-#   when: manual
-#   environment:
-#     name: backend/${CI_COMMIT_REF_SLUG}
-#     action: stop
-#   before_script:
-#     - "which ssh-agent || ( apt-get update -y && apt-get install openssh-client -y )"
-#     - eval $(ssh-agent -s)
-#     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
-#     - mkdir -p ~/.ssh
-#     - chmod 600 ~/.ssh
-#     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
-#     - chmod 644 ~/.ssh/known_hosts
-#   script:
-#     - ssh ${DEV_USER}@${DEV_HOST} "setsid /bin/bash -s " < ./backend/stop.sh
-
 build-backend-docker-job:
   stage: build
   image:
@@ -156,19 +115,28 @@ release-backend-docker:
 
 deploy-backend-docker:
   stage: deploy
+  image: docker:24.0.7-alpine3.19
   environment:
     name: backend/${CI_COMMIT_REF_SLUG}
     on_stop: delete-deploy-backend-docker
   before_script:
-    - "which ssh-agent || ( apt-get update -y && apt-get install gettext openssh-client -y )"
+    - apk add docker-cli-compose openssh-client
     - eval $(ssh-agent -s)
     - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - chmod 600 ~/.ssh
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
+    - docker context create remote --description "remote ssh" --docker "host=ssh://${DEV_USER}@${DEV_HOST}"
   script:
-    - envsubst < ./backend/backend_deploy_docker.sh|ssh ${DEV_USER}@${DEV_HOST}
+    - echo "SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}" >> deploy.env
+    - echo "SPRING_DATASOURCE_USERNAME=${PSQL_USER}" >> deploy.env
+    - echo "SPRING_DATASOURCE_PASSWORD=${PSQL_PASSWORD}" >> deploy.env
+    - echo "SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI}" >> deploy.env
+    - echo "REPORT_PATH=/var/www-data/htdocs" >> deploy.env
+    - cat deploy.env
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - docker --context remote compose --env-file deploy.env up backend -d --pull "always" --force-recreate
 
 delete-deploy-backend-docker:
   stage: deploy

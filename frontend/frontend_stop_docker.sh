@@ -1,2 +1,2 @@
 #! /bin/bash
-sudo docker rm -f sausage-frontend
+sudo docker rm -f sausage-store-frontend
