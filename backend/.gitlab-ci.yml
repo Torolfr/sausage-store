@@ -127,17 +127,29 @@ deploy-backend-docker:
     - chmod 600 ~/.ssh
     - ssh-keyscan ${DEV_HOST} >> ~/.ssh/known_hosts
     - chmod 644 ~/.ssh/known_hosts
-    - docker context create remote --description "remote ssh" --docker "host=ssh://${DEV_USER}@${DEV_HOST}"
+    - docker context create remote-host --description "remote ssh" --docker "host=ssh://${DEV_USER}@${DEV_HOST}"
   script:
     - echo "SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}" >> deploy.env
     - echo "SPRING_DATASOURCE_USERNAME=${PSQL_USER}" >> deploy.env
     - echo "SPRING_DATASOURCE_PASSWORD=${PSQL_PASSWORD}" >> deploy.env
     - echo "SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI}" >> deploy.env
-    - echo "REPORT_PATH=/var/www-data/htdocs" >> deploy.env
+    - echo "REPORT_PATH=/app/reports" >> deploy.env
+    - echo "LOG_PATH=/app/logs" >> deploy.env
     - cat deploy.env
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
-    - docker --context remote compose --env-file deploy.env up backend -d --pull "always" --force-recreate
-
+    - if ! [ -z $(docker --context remote-host ps --quiet --filter name=sausage-store-backend-blue-1) ]; then
+      docker-compose --context remote-host rm --stop --force backend-green;
+      docker-compose --context remote-host --env-file deploy.env up --detach --force-recreate --pull "always"  backend-green;
+      until [ -z $(docker --context remote-host ps --quiet --filter name=sausage-store-backend-green --filter health=healthy) ]; echo "Wait until backend-green will be healthy..."; do sleep 10; done;
+      docker-compose --context remote-host rm --stop --force backend-blue;
+      elif ! [ -z $(docker --context remote-host ps --quiet --filter name=sausage-store-backend-green-1) ]; then
+      docker-compose --context remote-host rm --stop --force backend-blue;
+      docker-compose --context remote-host --env-file deploy.env up --detach --force-recreate --pull "always" backend-blue;
+      until [ -z $(docker --context remote-host ps --quiet --filter name=sausage-store-backend-blue --filter health=healthy) ]; echo "Wait until backend-blue will be healthy..."; do sleep 10; done;
+      docker-compose --context remote-host rm --stop --force backend-green;
+      else
+      docker-compose --context remote-host --env-file deploy.env up --detach --force-recreate --pull "always"  backend-blue;
+      fi
 delete-deploy-backend-docker:
   stage: deploy
   when: manual

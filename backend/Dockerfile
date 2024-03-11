@@ -17,11 +17,16 @@ RUN keytool -importcert -file YandexInternalRootCA.crt \
     && addgroup --system jaruser \
     && adduser -S -s /bin/false -G jaruser jaruser -D -H \
     && mkdir -p /home/jaruser/.postgresql \
-    && chown -R jaruser:jaruser /home/jaruser/
+    && chown -R jaruser:jaruser /home/jaruser \
+    && mkdir -p /app/logs \
+    && chown -R jaruser:jaruser /app/logs \
+    && mkdir -p /app/reports \
+    && chown -R jaruser:jaruser /app/reports
+
 COPY --chown=jaruser:jaruser \
-     --from=builder /usr/src/app/target/sausage-store-${VERSION}.jar ./sausage-store.jar
+    --from=builder /usr/src/app/target/sausage-store-${VERSION}.jar ./sausage-store.jar
 COPY --chown=jaruser:jaruser \
-     --from=builder /usr/src/app/YandexInternalRootCA.crt /home/jaruser/.postgresql/root.crt
+    --from=builder /usr/src/app/YandexInternalRootCA.crt /home/jaruser/.postgresql/root.crt
 RUN chmod 400 /home/jaruser/.postgresql/root.crt
 EXPOSE 8080
 USER jaruser
