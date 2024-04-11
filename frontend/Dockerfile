@@ -9,4 +9,4 @@ RUN npm install \
 FROM nginx:1.23-alpine
 COPY --from=builder /usr/src/app/dist/frontend /usr/share/nginx/html
 # COPY --from=builder /usr/src/app/nginx.tmpl /app/nginx.tmpl
-EXPOSE 80
+EXPOSE 8080
