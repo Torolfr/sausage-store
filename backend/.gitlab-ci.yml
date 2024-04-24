@@ -5,9 +5,9 @@ variables:
 
 stages:
   - build
-  - notify
   - test
   - release
+  - notify
   - deploy
 
 include:
@@ -28,7 +28,7 @@ build-backend-code-job:
       mvn package -Dmaven.repo.local=${MAVEN_REPO_PATH}
       -Dversion.application=${VERSION}
       -Dspring.flyway.enabled=false
-      -DskipTests=true
+      -Dmaven.test.skip=true
 
 spotbugs-sast:
   stage: test
@@ -85,6 +85,7 @@ upload-backend-release:
     - >
       mvn deploy -DskipTests
       -Dmaven.repo.local=${MAVEN_REPO_PATH}
+      -Dmaven.test.skip=true
       -s settings.xml -Dversion.application=${VERSION}
 
 build-backend-docker-job:
